@@ -9,8 +9,8 @@ use std::env;
 use std::path::PathBuf;
 use std::fs::File;
 
-// #[cfg(target_os = "windows")]
-// use std::os::windows::process::CommandExt;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 // Структура для хранения информации о каждом процессе
 #[derive(Clone)] // Добавляем возможность клонирования ProcessConfig
@@ -47,6 +47,10 @@ fn main() {
         .setup({
             let processes = Arc::clone(&processes);
             move |_app| {
+
+                let args: Vec<String> = env::args().collect();
+                let in_debug = args.contains(&"--debug".to_string());
+
                 for config in process_configs.iter() {
                     let exe_path = env::current_exe().expect("failed to get current exe directory");
                     let exe_dir = exe_path.parent().expect("failed to get parent directory");
@@ -63,12 +67,14 @@ fn main() {
                     let stderr_file = File::create(&config.error_log).expect("failed to create stderr log file");
                     command.stderr(Stdio::from(stderr_file));
 
-                    // Установка флага для запуска без окна на Windows
-                    // #[cfg(target_os = "windows")]
-                    // {
-                    //     const DETACHED_PROCESS: u32 = 0x00000008;
-                    //     command.creation_flags(DETACHED_PROCESS);
-                    // }
+                    if !in_debug {
+                        // Установка флага для запуска без окна на Windows
+                        #[cfg(target_os = "windows")]
+                        {
+                            const DETACHED_PROCESS: u32 = 0x00000008;
+                            command.creation_flags(DETACHED_PROCESS);
+                        }
+                    }
 
                     // Запуск процесса
                     let child = command.spawn().expect("failed to start process");
