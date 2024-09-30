@@ -26,12 +26,17 @@ fn main() {
         ProcessConfig {
             binary: "out/bin/node/node.exe".to_string(),
             args: vec!["./out/master_server.js".to_string(), "page.useGenWorkers=true".to_string()],
-            error_log: "stderr_master_server.log".to_string(),
+            error_log: "stderr_master.log".to_string(),
+        },
+        ProcessConfig {
+            binary: "out/bin/node/node.exe".to_string(),
+            args: vec!["./out/db_server.js".to_string()],
+            error_log: "stderr_db.log".to_string(),
         },
         ProcessConfig {
             binary: "out/bin/node/node.exe".to_string(),
             args: vec!["./out/world_server.js".to_string(), "page.useGenWorkers=true".to_string()],
-            error_log: "stderr_world_server.log".to_string(),
+            error_log: "stderr_world.log".to_string(),
         },
     ];
 
