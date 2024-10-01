@@ -53,11 +53,6 @@
             }
         })
 
-
-        document.body.addEventListener("click", async () => {
-            await document.body.requestPointerLock()
-        })
-
         const tryDownload = () => {
             appendToLoading('.')
             fetch('http://localhost:5800/data/lang.json')
@@ -72,7 +67,7 @@
                 })
         }
 
-        // tryDownload()
+        tryDownload()
 
       </script>
 
