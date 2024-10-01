@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 use std::env;
 use std::path::PathBuf;
 use std::fs::File;
+// use tauri::Manager; // Импортируем Manager для использования get_window
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -18,6 +19,17 @@ struct ProcessConfig {
     binary: String,
     args: Vec<String>,
     error_log: String,
+}
+
+#[tauri::command]
+fn toggle_fullscreen(window: tauri::Window) {
+    let is_fullscreen = window.is_fullscreen().unwrap_or(false);
+    window.set_fullscreen(!is_fullscreen).unwrap();
+}
+
+#[tauri::command]
+fn open_devtools(window: tauri::Window) {
+    window.open_devtools();
 }
 
 fn main() {
@@ -98,6 +110,8 @@ fn main() {
                 }
             }
         })
+        .invoke_handler(tauri::generate_handler![toggle_fullscreen])
+        .invoke_handler(tauri::generate_handler![open_devtools])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

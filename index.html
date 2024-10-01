@@ -21,6 +21,10 @@
             background: #1c1149;
             color: #f6f6f6;
         }
+        #try-log {
+            word-break: break-word;
+            padding: 1em;
+        }
     </style>
     <!-- <script type="module" src="/src/main.ts" defer></script> -->
   </head>
@@ -32,17 +36,34 @@
 
       <script>
 
-        function tryDownload() {
+        function appendToLoading(text) {
+            const log = document.querySelector('#try-log');
+            log.innerText = log.innerText + text;
+        }
 
-            const el = document.querySelector('#try-log')
-            el.innerText = el.innerText + '.'
+        document.body.addEventListener('keyup', (e) => {
+            const tauri = window.__TAURI__
+            if (e.code == 'F11' || e.code == 'Enter' && e.altKey) {
+                (async () => {
+                    await tauri.window.appWindow.setFullscreen(!(await tauri.window.appWindow.isFullscreen()))
+                    // tauri.invoke("toggle_fullscreen")
+                })();
+            } else if (e.code == 'F11' && e.altKey) {
+                tauri.tauri.invoke("open_devtools")
+            }
+        })
 
+
+        document.body.addEventListener("click", async () => {
+            await document.body.requestPointerLock()
+        })
+
+        const tryDownload = () => {
+            appendToLoading('.')
             fetch('http://localhost:5800/data/lang.json')
                 .then(response => response.json())
                 .then(data => {
                     location.href = 'http://localhost:5800/'
-                    // console.log(data)
-                    // document.querySelector('h1').innerText = data.title
                 }).catch(e => {
                     console.error(e)
                     setTimeout(() => {
@@ -51,8 +72,8 @@
                 })
         }
 
-        tryDownload()
-        
+        // tryDownload()
+
       </script>
 
       <!-- <div class="row">

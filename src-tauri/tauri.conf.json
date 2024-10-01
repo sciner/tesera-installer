@@ -8,7 +8,7 @@
         "withGlobalTauri": true
     },
     "package": {
-        "productName": "tesera",
+        "productName": "Tesera",
         "version": "0.1.0"
     },
     "tauri": {
@@ -17,6 +17,10 @@
             "shell": {
                 "all": false,
                 "open": true
+            },
+            "window": {
+                "all": false,
+                "setFullscreen": true
             }
         },
         "windows": [
@@ -29,7 +33,19 @@
             }
         ],
         "security": {
-            "csp": null
+            "csp": null,
+            "dangerousRemoteDomainIpcAccess": [
+                {
+                    "domain": "localhost",
+                    "windows": ["main"],
+                    "enableTauriAPI": true
+                },
+                {
+                    "domain": "*",
+                    "windows": ["main"],
+                    "enableTauriAPI": true
+                }
+            ]
         },
         "bundle": {
             "active": true,
