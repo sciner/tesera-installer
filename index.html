@@ -25,8 +25,30 @@
             word-break: break-word;
             padding: 1em;
         }
+        /* Запрет перетаскивания изображений */
+        img {
+            pointer-events: none;
+            -webkit-user-drag: none;
+            user-drag: none;
+        }
+        /* Запрет выделения текста */
+        body {
+            user-select: none;
+        }
+        /* Разрешить выделение в инпутах */
+        input, textarea {
+            user-select: text;
+        }
     </style>
     <!-- <script type="module" src="/src/main.ts" defer></script> -->
+    <script>
+        // Запрет перетаскивания выделенного текста в инпутах
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                e.preventDefault()
+            }
+        })
+    </script>
   </head>
 
   <body>

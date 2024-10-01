@@ -12,6 +12,10 @@ use tauri::{Manager, Window}; // Используем Window из Tauri
 use winit::event::{DeviceEvent, Event, WindowEvent, ElementState, MouseButton};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::CursorGrabMode;
+use tauri::AppHandle;
+
+use std::fs;
+use tauri::api::path::app_data_dir;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -35,7 +39,7 @@ fn open_devtools(window: tauri::Window) {
     window.open_devtools();
 }
 
-fn create_processes(processes: &Arc<Mutex<Vec<Option<Child>>>>, in_debug: bool) {    // Массив с информацией о процессах
+fn create_processes(processes: &Arc<Mutex<Vec<Option<Child>>>>, app_data_path: String, in_debug: bool) {    // Массив с информацией о процессах
 
     let process_configs = vec![
         ProcessConfig {
@@ -66,6 +70,7 @@ fn create_processes(processes: &Arc<Mutex<Vec<Option<Child>>>>, in_debug: bool) 
         for arg in &config.args {
             command.arg(arg);
         }
+        command.arg(format!("app_data_path=\"{}\"", app_data_path));
 
         // Перенаправляем stderr в лог файл
         let stderr_file = File::create(&config.error_log).expect("failed to create stderr log file");
@@ -86,6 +91,20 @@ fn create_processes(processes: &Arc<Mutex<Vec<Option<Child>>>>, in_debug: bool) 
     }
 }
 
+fn ensure_app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    // Получаем путь к директории данных приложения
+    if let Some(app_dir) = app_data_dir(&app.config()) {
+        // Пробуем создать директорию, если её нет
+        if let Err(e) = fs::create_dir_all(&app_dir) {
+            return Err(format!("Error creating directory: {}", e));
+        }
+        // Возвращаем путь к директории
+        Ok(app_dir)
+    } else {
+        Err("Failed to get app data directory".to_string())
+    }
+}
+
 fn main() {
 
     // let processes: Arc<Mutex<Vec<Option<Child>>>> = Arc::new(Mutex::new(Vec::with_capacity(process_configs.len())));
@@ -99,7 +118,9 @@ fn main() {
                 let args: Vec<String> = env::args().collect();
                 let in_debug = args.contains(&"--debug".to_string());
 
-                create_processes(&processes, in_debug);
+                let app_data_path = ensure_app_data_dir(&app.handle())?.to_string_lossy().into_owned();
+
+                create_processes(&processes, app_data_path, in_debug);
 
                 Ok(())
             }
