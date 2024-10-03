@@ -67,8 +67,8 @@
             const tauri = window.__TAURI__
             if (e.code == 'F11' || e.code == 'Enter' && e.altKey) {
                 (async () => {
-                    await tauri.window.appWindow.setFullscreen(!(await tauri.window.appWindow.isFullscreen()))
-                    // tauri.invoke("toggle_fullscreen")
+                    // await tauri.window.appWindow.setFullscreen(!(await tauri.window.appWindow.isFullscreen()))
+                    tauri.invoke("toggle_fullscreen", {fullscreen: !(await tauri.window.appWindow.isFullscreen())})
                 })();
             } else if (e.code == 'F11' && e.altKey) {
                 tauri.tauri.invoke("open_devtools")

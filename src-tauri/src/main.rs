@@ -13,6 +13,7 @@ use winit::event::{DeviceEvent, Event, WindowEvent, ElementState, MouseButton};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::CursorGrabMode;
 use tauri::AppHandle;
+use serde_json::Value; // Импортируем тип Value для работы с JSON
 
 use std::fs;
 use tauri::api::path::app_data_dir;
@@ -29,9 +30,20 @@ struct ProcessConfig {
 }
 
 #[tauri::command]
-fn toggle_fullscreen(window: tauri::Window) {
-    let is_fullscreen = window.is_fullscreen().unwrap_or(false);
-    window.set_fullscreen(!is_fullscreen).unwrap();
+fn toggle_fullscreen(window: tauri::Window, fullscreen: bool) {
+
+    println!("toggle_fullscreen = {:?}", fullscreen);
+
+    // Получаем Arc<Mutex<Option<Config>>>
+    let config = window.state::<Arc<Mutex<Option<Config>>>>();
+    // Блокируем доступ к Config и вызываем метод set_fullscreen
+    let mut config_lock = config.lock().unwrap();
+    if let Some(ref mut config_data) = *config_lock {
+        config_data.set_fullscreen(fullscreen);
+        config_data.save();
+    }
+    // Применяем полноэкранный режим
+    window.set_fullscreen(fullscreen).unwrap();
 }
 
 #[tauri::command]
@@ -105,24 +117,98 @@ fn ensure_app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     }
 }
 
+struct Config {
+    config_path: PathBuf,
+    config_data: Option<Value>,
+}
+
+impl Config {
+    fn new(config_path: PathBuf) -> Self {
+        let mut config = Config {
+            config_path,
+            config_data: None,
+        };
+        config.load();
+        config
+    }
+    
+    // Метод для загрузки конфигурации из файла
+    fn load(&mut self) {
+        if let Ok(config_data) = fs::read_to_string(&self.config_path) {
+            self.config_data = Some(serde_json::from_str(&config_data).expect("Не удалось распарсить JSON"));
+        }
+    }
+
+    // Исправленный метод save
+    fn save(&self) {
+        if let Some(config_data) = &self.config_data {
+            // Преобразование конфигурации в строку
+            let config_string = serde_json::to_string_pretty(config_data)
+                .expect("Не удалось сериализовать конфигурацию");
+            // Запись строки в файл
+            fs::write(&self.config_path, config_string)
+                .expect("Не удалось записать файл конфигурации");
+        } else {
+            println!("Нет данных для сохранения");
+        }
+    }
+
+    // Метод для получения значения конфигурации по ключу
+    fn get_value(&self, key: &str) -> Option<&Value> {
+        if let Some(config) = &self.config_data {
+            config.get(key)
+        } else {
+            None
+        }
+    }
+
+    // Метод для установки значения fullscreen в конфиге
+    fn set_fullscreen(&mut self, fullscreen: bool) {
+        if let Some(ref mut config_data) = self.config_data {
+            config_data["fullscreen"] = serde_json::Value::Bool(fullscreen);
+            &self.save();
+        } else {
+            println!("Конфигурация не загружена");
+        }
+    }
+
+}
+
 fn main() {
 
     // let processes: Arc<Mutex<Vec<Option<Child>>>> = Arc::new(Mutex::new(Vec::with_capacity(process_configs.len())));
     let processes: Arc<Mutex<Vec<Option<Child>>>> = Arc::new(Mutex::new(Vec::new()));
+    let config: Arc<Mutex<Option<Config>>> = Arc::new(Mutex::new(None));
 
     tauri::Builder::default()
         .setup({
             let processes = Arc::clone(&processes);
+            let config = Arc::clone(&config);
             move |app| {
 
                 let args: Vec<String> = env::args().collect();
                 let in_debug = args.contains(&"--debug".to_string());
-
                 let app_data_path = ensure_app_data_dir(&app.handle())?.to_string_lossy().into_owned();
+                let window = app.get_window("main").unwrap();
 
                 create_processes(&processes, app_data_path, in_debug);
 
+                // Создаем объект Config и передаем путь к файлу
+                let config_path = PathBuf::from("config.json");
+                let mut config_lock = config.lock().unwrap(); // Блокируем доступ к config и изменяем его
+                *config_lock = Some(Config::new(config_path)); // Инициализируем config
+                // Помещаем конфигурацию в окно
+                window.manage(Arc::clone(&config));
+                // Пример использования конфигурации
+                if let Some(ref config) = *config_lock {
+                    if let Some(fullscreen_value) = config.get_value("fullscreen") {
+                        let fullscreen = fullscreen_value.as_bool().unwrap_or(false);
+                        window.set_fullscreen(fullscreen).unwrap();
+                    }
+                }
+
                 Ok(())
+
             }
         })
         .on_window_event({
