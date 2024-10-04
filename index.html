@@ -56,7 +56,7 @@
       <!-- <h1>Welcome to Tesera</h1> -->
       <h2 id="try-log">Loading...</h2>
 
-      <script>
+      <script type="module">
 
         function appendToLoading(text) {
             const log = document.querySelector('#try-log');
@@ -77,10 +77,10 @@
 
         const tryDownload = () => {
             appendToLoading('.')
-            fetch('http://localhost:5800/data/lang.json')
+            fetch('http://localhost:6800/data/lang.json')
                 .then(response => response.json())
                 .then(data => {
-                    location.href = 'http://localhost:5800/'
+                    location.href = 'http://localhost:6800/'
                 }).catch(e => {
                     console.debug(e)
                     setTimeout(() => {
