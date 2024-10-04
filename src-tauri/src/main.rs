@@ -8,15 +8,15 @@ use std::sync::{Arc, Mutex};
 use std::env;
 use std::path::PathBuf;
 use std::fs::File;
-use tauri::{Manager, Window}; // Используем Window из Tauri
-use winit::event::{DeviceEvent, Event, WindowEvent, ElementState, MouseButton};
-use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::CursorGrabMode;
 use tauri::AppHandle;
 use serde_json::Value; // Импортируем тип Value для работы с JSON
-
 use std::fs;
 use tauri::api::path::app_data_dir;
+use tauri::Manager;
+// use tauri::{Window}; // Используем Window из Tauri
+// use winit::event::{DeviceEvent, Event, WindowEvent, ElementState, MouseButton};
+// use winit::event_loop::{ControlFlow, EventLoop};
+// use winit::window::CursorGrabMode;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -31,9 +31,6 @@ struct ProcessConfig {
 
 #[tauri::command]
 fn toggle_fullscreen(window: tauri::Window, fullscreen: bool) {
-
-    println!("toggle_fullscreen = {:?}", fullscreen);
-
     // Получаем Arc<Mutex<Option<Config>>>
     let config = window.state::<Arc<Mutex<Option<Config>>>>();
     // Блокируем доступ к Config и вызываем метод set_fullscreen
@@ -49,6 +46,23 @@ fn toggle_fullscreen(window: tauri::Window, fullscreen: bool) {
 #[tauri::command]
 fn open_devtools(window: tauri::Window) {
     window.open_devtools();
+}
+
+#[tauri::command]
+fn save_screenshot(_app_handle: AppHandle, file_name: &str, file_data: Vec<u8>) -> Result<String, String> {
+    // Получаем путь к директории с исполняемым файлом
+    let exe_path = std::env::current_exe().map_err(|e| format!("Ошибка при получении пути к исполняемому файлу: {}", e))?;
+    // Определяем путь к папке screenshot
+    let screenshot_dir = exe_path.parent().unwrap().join("screenshot");
+    // Проверяем, существует ли папка, и если нет, создаем её
+    if !screenshot_dir.exists() {
+        fs::create_dir_all(&screenshot_dir).map_err(|e| format!("Не удалось создать папку screenshot: {}", e))?;
+    }
+    // Формируем полный путь для сохранения файла в папке screenshot
+    let file_path: PathBuf = screenshot_dir.join(file_name);
+    // Пытаемся сохранить файл
+    fs::write(&file_path, file_data).map_err(|e| format!("Не удалось сохранить файл: {}", e))?;
+    Ok(file_path.to_string_lossy().into_owned())
 }
 
 fn create_processes(processes: &Arc<Mutex<Vec<Option<Child>>>>, app_data_path: String, in_debug: bool) {    // Массив с информацией о процессах
@@ -166,7 +180,7 @@ impl Config {
     fn set_fullscreen(&mut self, fullscreen: bool) {
         if let Some(ref mut config_data) = self.config_data {
             config_data["fullscreen"] = serde_json::Value::Bool(fullscreen);
-            &self.save();
+            let _ = &self.save();
         } else {
             println!("Конфигурация не загружена");
         }
@@ -241,7 +255,7 @@ fn main() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![toggle_fullscreen, open_devtools])
+        .invoke_handler(tauri::generate_handler![toggle_fullscreen, open_devtools, save_screenshot])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
