@@ -9,11 +9,20 @@
     },
     "package": {
         "productName": "Tesera",
-        "version": "0.1.0"
+        "version": "0.2.0"
     },
     "tauri": {
         "allowlist": {
             "all": false,
+            "path": {
+                "all": true
+            },
+            "fs": {
+                "all": true,
+                "scope": [
+                    "$APPDATA"
+                ]
+            },
             "shell": {
                 "all": false,
                 "open": true
@@ -29,6 +38,8 @@
                 "url": "index.html",
                 "width": 1180,
                 "height": 820,
+                "minWidth": 320,
+                "minHeight": 240,
                 "center": true
             }
         ],
@@ -61,7 +72,8 @@
                 "icons/icon.ico"
             ],
             "resources": [
-                "out"
+                "out",
+                "config.json"
             ]
         }
     }

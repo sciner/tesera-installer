@@ -25,8 +25,30 @@
             word-break: break-word;
             padding: 1em;
         }
+        /* Запрет перетаскивания изображений */
+        img {
+            pointer-events: none;
+            -webkit-user-drag: none;
+            user-drag: none;
+        }
+        /* Запрет выделения текста */
+        body {
+            user-select: none;
+        }
+        /* Разрешить выделение в инпутах */
+        input, textarea {
+            user-select: text;
+        }
     </style>
     <!-- <script type="module" src="/src/main.ts" defer></script> -->
+    <script>
+        // Запрет перетаскивания выделенного текста в инпутах
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                e.preventDefault()
+            }
+        })
+    </script>
   </head>
 
   <body>
@@ -34,7 +56,7 @@
       <!-- <h1>Welcome to Tesera</h1> -->
       <h2 id="try-log">Loading...</h2>
 
-      <script>
+      <script type="module">
 
         function appendToLoading(text) {
             const log = document.querySelector('#try-log');
@@ -45,34 +67,29 @@
             const tauri = window.__TAURI__
             if (e.code == 'F11' || e.code == 'Enter' && e.altKey) {
                 (async () => {
-                    await tauri.window.appWindow.setFullscreen(!(await tauri.window.appWindow.isFullscreen()))
-                    // tauri.invoke("toggle_fullscreen")
+                    // await tauri.window.appWindow.setFullscreen(!(await tauri.window.appWindow.isFullscreen()))
+                    tauri.invoke("toggle_fullscreen", {fullscreen: !(await tauri.window.appWindow.isFullscreen())})
                 })();
             } else if (e.code == 'F11' && e.altKey) {
                 tauri.tauri.invoke("open_devtools")
             }
         })
 
-
-        document.body.addEventListener("click", async () => {
-            await document.body.requestPointerLock()
-        })
-
         const tryDownload = () => {
             appendToLoading('.')
-            fetch('http://localhost:5800/data/lang.json')
+            fetch('http://localhost:6800/data/lang.json')
                 .then(response => response.json())
                 .then(data => {
-                    location.href = 'http://localhost:5800/'
+                    location.href = 'http://localhost:6800/'
                 }).catch(e => {
-                    console.error(e)
+                    console.debug(e)
                     setTimeout(() => {
                         tryDownload()
                     }, 100)
                 })
         }
 
-        // tryDownload()
+        tryDownload()
 
       </script>
 
