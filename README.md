@@ -1,5 +1,7 @@
 # tesera-installer
 
+Before using you need to install https://rustup.rs/
+
 # Build
 ```
 npm run tauri build
