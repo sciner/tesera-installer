@@ -70,17 +70,17 @@ fn create_processes(processes: &Arc<Mutex<Vec<Option<Child>>>>, app_data_path: S
     let process_configs = vec![
         ProcessConfig {
             binary: "out/bin/node/node.exe".to_string(),
-            args: vec!["./out/master_server.js".to_string(), "page.useGenWorkers=true".to_string()],
+            args: vec!["./master_server.js".to_string(), "page.useGenWorkers=true".to_string()],
             error_log: "stderr_master.log".to_string(),
         },
         ProcessConfig {
             binary: "out/bin/node/node.exe".to_string(),
-            args: vec!["./out/db_server.js".to_string()],
+            args: vec!["./db_server.js".to_string()],
             error_log: "stderr_db.log".to_string(),
         },
         ProcessConfig {
             binary: "out/bin/node/node.exe".to_string(),
-            args: vec!["./out/world_server.js".to_string(), "page.useGenWorkers=true".to_string()],
+            args: vec!["--import".to_string(), "@sciner/ts-build".to_string(), "./world_server.js".to_string(), "page.useGenWorkers=true".to_string()],
             error_log: "stderr_world.log".to_string(),
         },
     ];
@@ -91,6 +91,8 @@ fn create_processes(processes: &Arc<Mutex<Vec<Option<Child>>>>, app_data_path: S
         let binary_path: PathBuf = exe_dir.join(&config.binary);
 
         let mut command = Command::new(binary_path);
+
+        command.current_dir("out");
 
         // Добавляем аргументы командной строки
         for arg in &config.args {
@@ -115,6 +117,7 @@ fn create_processes(processes: &Arc<Mutex<Vec<Option<Child>>>>, app_data_path: S
         let child = command.spawn().expect("failed to start process");
         processes.lock().unwrap().push(Some(child)); // Добавляем процесс в вектор
     }
+
 }
 
 fn ensure_app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
